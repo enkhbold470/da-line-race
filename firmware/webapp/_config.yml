@@ -1,0 +1,15 @@
+title: BADGE
+description: Web Bluetooth control app for ESP32-C3 badge firmware
+theme: null
+plugins: []
+include:
+  - index.html
+  - manifest.json
+  - sw.js
+  - icon.svg
+exclude:
+  - README.md
+keep_files:
+  - sw.js
+  - manifest.json
+  - icon.svg

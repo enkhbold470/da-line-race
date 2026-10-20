@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BADGE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BADGE">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  :root {
+    --bg:     #0a0a0a;
+    --bg-2:   #16161a;
+    --ink:    #f4ecd8;
+    --dim:    #7a766c;
+    --line:   #2a2924;
+    --hot:    #ff4a1c;
+    --ok:     #b6c46b;
+    --acc:    #6ec6ff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; padding:0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.4 -apple-system, system-ui, sans-serif;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--dim);
+    flex-shrink: 0;
+  }
+  .dot.live { background: var(--ok); }
+  .dot.err  { background: var(--hot); }
+  .topbar .name {
+    font-weight: 600;
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .topbar .pro {
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .topbar .pro.on { color: var(--hot); }
+
+  main {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+
+  section {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  section h2 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  section > h2:first-child { margin-top: 0; }
+
+  .connect-btn {
+    width: 100%;
+    padding: 18px;
+    font-size: 17px;
+    font-weight: 600;
+    background: var(--hot);
+    color: #fff;
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .connect-btn:disabled { background: var(--bg-2); color: var(--dim); }
+  .connect-btn.hidden { display: none; }
+
+  /* status row */
+  .tele {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    text-align: center;
+  }
+  .tele .cell .k { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .tele .cell .v { font-size: 18px; font-weight: 600; margin-top: 2px; }
+
+  /* form */
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--dim);
+    margin: 12px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  label:first-child { margin-top: 0; }
+  input, textarea, select {
+    width: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    font: inherit;
+    font-size: 16px;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--hot); }
+  textarea { min-height: 80px; resize: vertical; }
+
+  button {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 16px;
+    background: var(--ink);
+    color: var(--bg);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    min-height: 44px;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  button.accent {
+    background: var(--acc);
+    color: var(--bg);
+  }
+  button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .row button { flex: 1; min-width: 90px; }
+
+  /* mode grid */
+  .modes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .modes button {
+    padding: 14px 4px;
+    font-size: 13px;
+    min-height: 60px;
+  }
+
+  /* big remote button */
+  .remote {
+    display: flex; gap: 8px;
+  }
+  .remote .big {
+    flex: 2;
+    padding: 22px;
+    font-size: 18px;
+    background: var(--hot);
+    color: #fff;
+  }
+  .remote .esc {
+    flex: 1;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  .pro-only { display: none; }
+  body.pro .pro-only { display: block; }
+
+  .log {
+    margin-top: 12px;
+    height: 90px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: 11px/1.4 ui-monospace, monospace;
+    color: var(--dim);
+    background: var(--bg);
+  }
+  .log .ln b { color: var(--ink); }
+  .log .ln.err b { color: var(--hot); }
+
+  .alert {
+    margin: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--hot);
+    color: var(--hot);
+    font-size: 13px;
+  }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--dim);
+    margin-left: 6px;
+  }
+  .pill.on { color: var(--ok); border-color: var(--ok); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="dot" id="dot"></span>
+  <span class="name" id="devName">not connected</span>
+  <span class="pro" id="proBadge">basic</span>
+</div>
+
+<div id="not-supported" class="alert" style="display:none">
+  Web Bluetooth not available. Use Chrome/Edge on Android or desktop. iOS: use Bluefy.
+</div>
+
+<main>
+
+  <button class="connect-btn" id="btnConnect">Connect to BADGE</button>
+
+  <section id="liveSection" style="display:none">
+    <h2>Live</h2>
+    <div class="tele">
+      <div class="cell"><div class="k">mode</div><div class="v" id="tMode">—</div></div>
+      <div class="cell"><div class="k">state</div><div class="v" id="tState">—</div></div>
+      <div class="cell"><div class="k">score</div><div class="v" id="tScore">—</div></div>
+    </div>
+  </section>
+
+  <section id="modeSection" style="display:none">
+    <h2>Mode</h2>
+    <div class="modes">
+      <button data-mode="card">Card</button>
+      <button data-mode="badge">Badge</button>
+      <button data-mode="ble">BLE</button>
+      <button data-mode="snake">Snake</button>
+      <button data-mode="dino">Dino</button>
+      <button data-mode="reaction">Reaction</button>
+      <button data-mode="dice">Dice</button>
+      <button data-mode="magic8">Magic 8</button>
+      <button data-mode="clock">Clock</button>
+      <button data-mode="stopwatch">Stopwatch</button>
+      <button data-mode="countdown">Countdown</button>
+      <button data-mode="custom">Custom*</button>
+    </div>
+    <div class="row">
+      <button id="btnMenu" class="ghost">↩ Back to menu</button>
+    </div>
+  </section>
+
+  <section id="remoteSection" style="display:none">
+    <h2>Remote Button</h2>
+    <div class="remote">
+      <button class="big" id="btnTap">TAP</button>
+      <button class="esc" id="btnEsc">EXIT</button>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin:10px 0 0">
+      Tap = simulate short press. Exit = double-click on device.
+    </p>
+  </section>
+
+  <section>
+    <h2>Business Card</h2>
+    <label>Name</label>
+    <input id="cardName" type="text" placeholder="Inky Ganbold">
+    <label>Title</label>
+    <input id="cardTitle" type="text" placeholder="Maker">
+    <label>Email or Website</label>
+    <input id="cardContact" type="text" placeholder="i@inkyg.com">
+    <div class="row">
+      <button id="cardSave" disabled>Save</button>
+      <button id="cardLoad" class="ghost" disabled>Reload</button>
+      <button id="cardShow"  class="accent" disabled>Show on OLED</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Event Badge</h2>
+    <label>Line 1 (marquee)</label>
+    <input id="badgeL1" type="text" placeholder="INKY G.">
+    <label>Line 2</label>
+    <input id="badgeL2" type="text" placeholder="say hi @ inkyg.com">
+    <div class="row">
+      <button id="badgeSave" disabled>Save</button>
+      <button id="badgeLoad" class="ghost" disabled>Reload</button>
+      <button id="badgeShow" class="accent" disabled>Show on OLED</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Clock &amp; Countdown</h2>
+    <label>Sync clock from phone</label>
+    <div class="row" style="margin-top:0">
+      <button id="syncClock" disabled>Push current time</button>
+    </div>
+    <label>Countdown duration (seconds)</label>
+    <input id="cdSecs" type="number" min="1" value="300">
+    <div class="row">
+      <button id="cdSet" disabled>Push duration</button>
+      <button id="cdShow" class="accent" disabled>Open countdown</button>
+    </div>
+  </section>
+
+  <section class="pro-only">
+    <h2>Custom Screen <span class="pill on">PRO</span></h2>
+    <textarea id="customTxt" placeholder="Hello from&#10;web app"></textarea>
+    <div class="row">
+      <button id="customSave" disabled>Push to OLED</button>
+      <button id="customShow" class="accent" disabled>Open custom mode</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Session</h2>
+    <div class="row">
+      <button id="btnUnlock" disabled>Unlock pro</button>
+      <button id="btnLock"   class="ghost" disabled>Lock</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Log</h2>
+    <div class="log" id="log"></div>
+  </section>
+
+</main>
+
+<script>
+const SVC      = '6e400001-c7a3-4b6f-9a83-1b00a0c8b001';
+const C_CMD    = '6e400002-c7a3-4b6f-9a83-1b00a0c8b001';
+const C_CARD   = '6e400003-c7a3-4b6f-9a83-1b00a0c8b001';
+const C_BADGE  = '6e400004-c7a3-4b6f-9a83-1b00a0c8b001';
+const C_CUSTOM = '6e400005-c7a3-4b6f-9a83-1b00a0c8b001';
+const C_STATUS = '6e400006-c7a3-4b6f-9a83-1b00a0c8b001';
+const C_UNLOCK = '6e400007-c7a3-4b6f-9a83-1b00a0c8b001';
+
+let device = null, server = null, svc = null;
+const chars = {};
+
+const $  = id => document.getElementById(id);
+const td = new TextDecoder();
+const te = new TextEncoder();
+
+if (!navigator.bluetooth) {
+  $('not-supported').style.display = 'block';
+  $('btnConnect').disabled = true;
+}
+
+function log(msg, kind='') {
+  const el = $('log');
+  const ln = document.createElement('div');
+  ln.className = 'ln' + (kind ? ' '+kind : '');
+  ln.innerHTML = `<b>${new Date().toLocaleTimeString()}</b> ${msg}`;
+  el.appendChild(ln);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function write(ch, str)  { await ch.writeValue(te.encode(str)); }
+async function readStr(ch)     { return td.decode(await ch.readValue()); }
+
+$('btnConnect').onclick = async () => {
+  try {
+    log('requesting device…');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'ROBOT' }],
+      optionalServices: [SVC]
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    log(`selected <b>${device.name}</b>`);
+    $('devName').textContent = device.name || 'BADGE';
+
+    log('connecting…');
+    server = await device.gatt.connect();
+    svc    = await server.getPrimaryService(SVC);
+
+    chars.cmd    = await svc.getCharacteristic(C_CMD);
+    chars.card   = await svc.getCharacteristic(C_CARD);
+    chars.badge  = await svc.getCharacteristic(C_BADGE);
+    chars.custom = await svc.getCharacteristic(C_CUSTOM);
+    chars.status = await svc.getCharacteristic(C_STATUS);
+    chars.unlock = await svc.getCharacteristic(C_UNLOCK);
+
+    await chars.status.startNotifications();
+    chars.status.addEventListener('characteristicvaluechanged', onStatus);
+
+    await pullCard();
+    await pullBadge();
+
+    setConnected(true);
+    log('<b>linked</b>');
+  } catch (e) {
+    log(`connect failed: ${e.message}`, 'err');
+    setConnected(false);
+  }
+};
+
+function onDisconnected() {
+  log('disconnected', 'err');
+  setConnected(false);
+}
+
+function setConnected(on) {
+  $('dot').classList.toggle('live', on);
+  $('btnConnect').classList.toggle('hidden', on);
+  $('liveSection').style.display   = on ? 'block' : 'none';
+  $('modeSection').style.display   = on ? 'block' : 'none';
+  $('remoteSection').style.display = on ? 'block' : 'none';
+  if (!on) $('devName').textContent = 'not connected';
+  document.querySelectorAll('button').forEach(b => {
+    if (b.id === 'btnConnect') return;
+    b.disabled = !on;
+  });
+  if (!on) {
+    $('proBadge').textContent = 'basic';
+    $('proBadge').classList.remove('on');
+    document.body.classList.remove('pro');
+  }
+}
+
+function onStatus(e) {
+  let j; try { j = JSON.parse(td.decode(e.target.value)); } catch { return; }
+  if (j.mode  != null) $('tMode').textContent  = j.mode;
+  if (j.state != null) $('tState').textContent = j.state;
+  if (j.score != null) $('tScore').textContent = j.score;
+}
+
+// -------- mode switcher --------
+document.querySelectorAll('.modes button').forEach(b => {
+  b.addEventListener('click', async () => {
+    const m = b.dataset.mode;
+    try {
+      await write(chars.cmd, 'mode:' + m);
+      log('mode -> ' + m);
+    } catch (e) { log('mode fail: '+e.message, 'err'); }
+  });
+});
+$('btnMenu').onclick = async () => {
+  await write(chars.cmd, 'menu'); log('back to menu');
+};
+
+// -------- remote button --------
+$('btnTap').onclick = async () => { await write(chars.cmd, 'btn'); };
+$('btnEsc').onclick = async () => { await write(chars.cmd, 'menu'); };
+
+// -------- card --------
+async function pullCard() {
+  try {
+    const j = JSON.parse(await readStr(chars.card));
+    $('cardName').value    = j.name    || '';
+    $('cardTitle').value   = j.title   || '';
+    $('cardContact').value = j.contact || '';
+    log('card loaded');
+  } catch (e) { log('card pull failed: '+e.message, 'err'); }
+}
+$('cardLoad').onclick = pullCard;
+$('cardSave').onclick = async () => {
+  await write(chars.card, JSON.stringify({
+    name:    $('cardName').value,
+    title:   $('cardTitle').value,
+    contact: $('cardContact').value
+  }));
+  log('card saved');
+};
+$('cardShow').onclick = async () => {
+  await write(chars.cmd, 'mode:card');
+  log('mode -> card');
+};
+
+// -------- badge --------
+async function pullBadge() {
+  try {
+    const j = JSON.parse(await readStr(chars.badge));
+    $('badgeL1').value = j.l1 || '';
+    $('badgeL2').value = j.l2 || '';
+    log('badge loaded');
+  } catch (e) { log('badge pull failed: '+e.message, 'err'); }
+}
+$('badgeLoad').onclick = pullBadge;
+$('badgeSave').onclick = async () => {
+  await write(chars.badge, JSON.stringify({
+    l1: $('badgeL1').value, l2: $('badgeL2').value
+  }));
+  log('badge saved');
+};
+$('badgeShow').onclick = async () => {
+  await write(chars.cmd, 'mode:badge');
+  log('mode -> badge');
+};
+
+// -------- clock + countdown --------
+$('syncClock').onclick = async () => {
+  // send seconds-of-day in the device's local time (no TZ to firmware)
+  const d = new Date();
+  const sod = d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
+  await write(chars.cmd, 'time:' + sod);
+  log('clock synced (' + sod + 's of day)');
+};
+$('cdSet').onclick = async () => {
+  const s = Math.max(1, parseInt($('cdSecs').value, 10) || 30);
+  await write(chars.cmd, 'cd:' + s);
+  log('countdown set: ' + s + 's');
+};
+$('cdShow').onclick = async () => {
+  await write(chars.cmd, 'mode:countdown');
+  log('mode -> countdown');
+};
+
+// -------- custom --------
+$('customSave').onclick = async () => {
+  const t = $('customTxt').value.replace(/\\n/g, '\n');
+  await write(chars.custom, t);
+  log('custom pushed');
+};
+$('customShow').onclick = async () => {
+  await write(chars.cmd, 'mode:custom');
+  log('mode -> custom');
+};
+
+// -------- pro lock --------
+$('btnUnlock').onclick = async () => {
+  await write(chars.unlock, '1');
+  $('proBadge').textContent = 'pro';
+  $('proBadge').classList.add('on');
+  document.body.classList.add('pro');
+  log('<b>pro unlocked</b>');
+};
+$('btnLock').onclick = async () => {
+  await write(chars.unlock, '0');
+  $('proBadge').textContent = 'basic';
+  $('proBadge').classList.remove('on');
+  document.body.classList.remove('pro');
+  log('locked');
+};
+
+// -------- PWA service worker --------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => log('pwa ready'))
+      .catch((e) => log('sw register failed: ' + e.message, 'err'));
+  });
+}
+</script>
+
+</body>
+</html>
